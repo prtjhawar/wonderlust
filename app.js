@@ -14,11 +14,19 @@ const wrapasyn = require("./utilts/wrapasync.js");
 const ExpressError = require("./utilts/ExpressError.js");
 
 const session = require("express-session");
-const flash = require("connect-flash")
+const flash = require("connect-flash");
+const passport = require("passport");
+const LocalStrategy = require("passport-local");
+const User = require("./models/user.js")
+
+
+// const listings = require("./routes/listing.js");
+// const reviews = require("./routes/review.js");
 
 const {listingSchema , reviewSchema} = require('./schema.js')
 const Review = require("./models/reviews.js");
 const { log } = require("console");
+const { register } = require("module");
 
 
 
@@ -50,12 +58,36 @@ const sessionOptions = {
 app.use(session(sessionOptions));
 app.use(flash());
 
+app.use(passport.initialize());
+app.use(passport.session());
+passport.use(new LocalStrategy(User.authenticate()));
+
+passport.serializeUser(User.serializeUser());
+passport.deserializeUser(User.deserializeUser());
+
+
+
+
 app.use((req,res,next) => {
     res.locals.success = req.flash("success")
     res.locals.error = req.flash("error")
 
     next();
 })
+
+app.get("/demouser",async(req,res)=>{
+    let fakeuser = new User({
+        email : "student@gmail.com",
+        username:"delta-student"
+    });
+    let newregister = await User.register(fakeuser,"helloword");
+    res.send(newregister);
+
+
+})
+
+// app.use("/listing",listings);
+// app.use("/listing/:id/reviews",reviews)
 
 
 
@@ -208,7 +240,7 @@ app.delete("/listing/:id/reviews/:reviewId",async(req,res)=>{
      req.flash("success","Review Deleted!")
 
      res.redirect(`/listing/${id}`);
-})
+}) 
 
 
 
@@ -218,7 +250,7 @@ app.delete("/listing/:id/reviews/:reviewId",async(req,res)=>{
 
 // app.all("*",(req,res,next) =>{
 //     next(new ExpressError(404,"Page is not found!"))
-// })
+// }) 
 
 
 app.use((err,req,res,next)=>{
